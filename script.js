@@ -26,8 +26,11 @@ class Piece {
     }
 };
 
+let previousDiv = null;
+let gameBoard;
+
 function startGame(){
-    let gameBoard = new GameBoard(4, 9);
+    gameBoard = new GameBoard(4, 9);
     document.documentElement.style.setProperty("--column-number", gameBoard.col);
 
     const piecesList = [];
@@ -39,12 +42,103 @@ function startGame(){
     generateBoard(gameBoard.board, piecesList);
     let divElements = document.querySelectorAll('[data-cell]');
     divElements.forEach(div => {
-        div.addEventListener("click", handleClick, {one: true});
+        div.removeEventListener("click", handleClick);
+        div.addEventListener("click", handleClick);
     });
 }
 
-function handleClick(){
+function handleClick(event){
+    let currentDiv = event.currentTarget;
+    if(previousDiv == null){
+        currentDiv.classList.add("selected");
+        previousDiv = currentDiv;
+    } else if(currentDiv == previousDiv) {
+        currentDiv.classList.remove("selected");
+        previousDiv = null;
+    } else if(currentDiv != previousDiv){
+        isConnectable(currentDiv);
+    }
+}
 
+function isConnectable(currentDiv){
+    let currentDivPos = currentDiv.getAttribute("data-cell").split(",").map(el => el = +el);
+    let previousDivPos = previousDiv.getAttribute("data-cell").split(",").map(el => el = +el);
+    let board = gameBoard.board;
+    let currentDivPiece = board[currentDivPos[0]][currentDivPos[1]];
+    let previousDivPiece = board[previousDivPos[0]][previousDivPos[1]];
+    if(currentDivPiece == previousDivPiece){                                    // So sánh 2 hình giống nhau hay không
+        if(currentDivPos[0] == previousDivPos[0]) {                             // Hàng của 2 hình có bằng ko
+            if(havePiecesBetween(currentDivPos, previousDivPos, 'row')){
+                removePiece(currentDiv, previousDiv, currentDivPos, previousDivPos);
+            }
+        } else if(currentDivPos[1] == previousDivPos[1]){                       // Cột của 2 hình có bằng không
+            if(havePiecesBetween(currentDivPos, previousDivPos, 'column')){     // Khoảng cách giữa 2 hàng
+                removePiece(currentDiv, previousDiv, currentDivPos, previousDivPos);
+            }
+        } else {                                                                // Hàng, cột đều không bằng nhau
+
+        }
+    } else {
+        previousDiv.classList.remove("selected");
+        previousDiv = null;
+    }
+}
+
+function removePiece(current, previous, currentPos, previousPos){
+    let board = gameBoard.board;
+    current.style.visibility = "hidden";
+    previous.style.visibility = "hidden";
+    current.classList.remove("selected");
+    previous.classList.remove("selected");
+    board[currentPos[0]][currentPos[1]] = undefined;
+    board[previousPos[0]][previousPos[1]] = undefined;
+    previousDiv = null;
+}
+
+function havePiecesBetween(current, previous, line){
+    let result = false;
+    let board = gameBoard.board;
+    switch (line){
+        case "row":
+            {
+                let row = current[0];
+                let first = current[1] - previous[1] > 0 ? previous[1] : current[1];
+                let last = current[1] - previous[1] > 0 ? current[1] : previous[1];
+                let count = 0;
+                if(last - first == 1){
+                    result = true;
+                }
+                for(let i = first + 1; i < last; i++){
+                    if(board[row][i] == undefined){
+                        count++;
+                    }
+                }
+                if(count == (last - first - 1)){
+                    result = true;
+                }
+            }
+            break;
+        case "column":
+            {
+                let col = current[1];
+                let first = current[0] - previous[0] > 0 ? previous[0] : current[0];
+                let last = current[0] - previous[0] > 0 ? current[0] : previous[0];
+                let count = 0;
+                if(last - first == 1){
+                    result = true;
+                }
+                for(let i = first + 1; i < last; i++){
+                    if(board[i][col] == undefined){
+                        count++;
+                    }
+                }
+                if(count == (last - first - 1)){
+                    result = true;
+                }
+            }
+            break;
+    }
+    return result;
 }
 
 function generateBoard(board, pieceList){
