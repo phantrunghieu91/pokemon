@@ -30,10 +30,16 @@ body {
     flex: row nowrap;
     justify-content: center;
     align-items: center;
-    border: 3px solid black;
+    border: 3px solid green;
     width: 44px;
     height: 54px;
     cursor: pointer;
+    visibility: visible;
+    opacity: 2;
+}
+
+.piece.selected {
+    opacity: 0.5;
 }
 
 .piece:hover {
