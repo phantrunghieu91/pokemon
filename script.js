@@ -30,11 +30,11 @@ let previousDiv = null;
 let gameBoard;
 
 function startGame(){
-    gameBoard = new GameBoard(4, 9);
+    gameBoard = new GameBoard(6, 9);
     document.documentElement.style.setProperty("--column-number", gameBoard.col);
 
     const piecesList = [];
-    for(let i = 1; i <= 18; i++){
+    for(let i = 1; i <= 27; i++){
         const piece = new Piece(i, `images/pieces${i}.png`);
         piecesList.push(piece);
     }
@@ -70,13 +70,24 @@ function isConnectable(currentDiv){
         if(currentDivPos[0] == previousDivPos[0]) {                             // Hàng của 2 hình có bằng ko
             if(havePiecesBetween(currentDivPos, previousDivPos, 'row')){
                 removePiece(currentDiv, previousDiv, currentDivPos, previousDivPos);
+            } else {
+                previousDiv.classList.remove("selected");
+                previousDiv = null;
             }
         } else if(currentDivPos[1] == previousDivPos[1]){                       // Cột của 2 hình có bằng không
-            if(havePiecesBetween(currentDivPos, previousDivPos, 'column')){     // Khoảng cách giữa 2 hàng
+            if(havePiecesBetween(currentDivPos, previousDivPos, 'column')){     
                 removePiece(currentDiv, previousDiv, currentDivPos, previousDivPos);
+            } else {
+                previousDiv.classList.remove("selected");
+                previousDiv = null;
             }
         } else {                                                                // Hàng, cột đều không bằng nhau
-
+            if(havePiecesBetween(currentDivPos, previousDivPos, 'diagonal')){     
+                removePiece(currentDiv, previousDiv, currentDivPos, previousDivPos);
+            } else {
+                previousDiv.classList.remove("selected");
+                previousDiv = null;
+            }
         }
     } else {
         previousDiv.classList.remove("selected");
@@ -99,25 +110,75 @@ function havePiecesBetween(current, previous, line){
     let result = false;
     let board = gameBoard.board;
     switch (line){
+        // Hai pokemon cùng hàng
         case "row":
             {
                 let row = current[0];
                 let first = current[1] - previous[1] > 0 ? previous[1] : current[1];
                 let last = current[1] - previous[1] > 0 ? current[1] : previous[1];
                 let count = 0;
-                if(last - first == 1){
+                if(last - first == 1){  // Hai pokemon liền kề
                     result = true;
-                }
-                for(let i = first + 1; i < last; i++){
-                    if(board[row][i] == undefined){
-                        count++;
+                } else {
+                    // Kiểm tra giữa 2 pokemon có pokemon khác không
+                    for(let i = first + 1; i < last; i++){
+                        if(board[row][i] == undefined){
+                            count++;
+                        }
                     }
-                }
-                if(count == (last - first - 1)){
-                    result = true;
+                    if(count == (last - first - 1)){    // Không có trả về true
+                        result = true;
+                    } else {                            // Có pokemon giữa 2 pokemon
+                        if(row == 0                     // Kiểm tra nếu hàng đó = 0 
+                            || board[row-1][first] == undefined){ // hoặc ô trên của hình 1 rỗng
+                            if(row == 0) result = true;
+                            else{
+                                for(let r = row - 1; r >= 0; r--){
+                                    count = 0;
+                                    if(r < 0){
+                                        result = true;
+                                        break;
+                                    } else {
+                                        for(let i = first + 1; i <= last; i++){
+                                            if(board[r][i] == undefined){
+                                                count++;
+                                            }
+                                        }
+                                        if(count == (last - first)){
+                                            result = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if(row == board.length - 1 || board[row+1][first] == undefined){
+                            if(row == board.length - 1){
+                                result = true;
+                            } else {
+                                for(let r = row + 1; row <= board.length; r++){
+                                    count = 0;
+                                    if(r == board.length){
+                                        result = true;
+                                    } else {
+                                        for(let i = first + 1; i <= last; i++){
+                                            if(board[r][i] == undefined){
+                                                count++;
+                                            }
+                                        }
+                                        if(count == (last - first)){
+                                            result = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }                            
+                        } else {
+                            result = false;
+                        }                    
+                    }
                 }
             }
             break;
+        // Hai pokemon cùng cột
         case "column":
             {
                 let col = current[1];
@@ -126,14 +187,79 @@ function havePiecesBetween(current, previous, line){
                 let count = 0;
                 if(last - first == 1){
                     result = true;
-                }
-                for(let i = first + 1; i < last; i++){
-                    if(board[i][col] == undefined){
-                        count++;
+                } else {
+                    for(let i = first + 1; i < last; i++){
+                        if(board[i][col] == undefined){
+                            count++;
+                        }
+                    }
+                    if(count == (last - first - 1)){
+                        result = true;
+                    } else {
+                        if(col == 0 || board[first][col - 1] == undefined){
+                            if(col == 0) result = true;
+                            else {
+                                for(let c = col - 1; c >= 0; c--){
+                                    count = 0;
+                                    if(c < 0){
+                                        result = true;
+                                        break;
+                                    } else {
+                                        for(let i = first + 1; i <= last; i++){
+                                            if(board[i][c]){
+                                                count++;
+                                            }
+                                        }
+                                        if(count == last - first){
+                                            result = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } else if(col == board[first].length - 1 ||
+                                    board[first][col + 1] == undefined){
+                            if(col == board[first].length - 1) result = true;
+                            else {
+                                for(let c = col + 1; c <= board[first].length; c++){
+                                    count = 0;
+                                    if(c == board[first].length){
+                                        result = true;
+                                    } else {
+                                        for(let i = first + 1; i <= last; i++){
+                                            if(board[i][c]){
+                                                count++;
+                                            }
+                                        }
+                                        if(count == last - first){
+                                            result = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            result = false;
+                        }
                     }
                 }
-                if(count == (last - first - 1)){
-                    result = true;
+                
+            }
+            break;
+        case "diagonal":
+            let distanceX = Math.abs
+            for(let c = colFirst + 1; c <= colLast; c++){
+                if(c > colLast){
+                    break;
+                } else {
+
+                }
+            }
+            for(let r = rowFirst + 1; r <= rowLast; r++){
+                if(r > colLast){
+                    break;
+                } else {
+
                 }
             }
             break;
